@@ -1,4 +1,5 @@
 .vscode
 token
 **.pyc
-*.log
+**.log
+
