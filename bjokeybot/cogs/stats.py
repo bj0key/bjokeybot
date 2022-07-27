@@ -4,6 +4,7 @@ from bjokeybot.logger import log
 from discord import File
 from discord.ext import commands
 from matplotlib import pyplot as plt
+from textwrap import wrap
 
 
 class StatsCog(commands.Cog):
@@ -15,7 +16,7 @@ class StatsCog(commands.Cog):
         plt.grid(axis="y", alpha=0.25)
 
         genders = [
-            (r.name, len(r.members), r.color)
+            ("\n".join(wrap(r.name, 12, break_long_words=False)), len(r.members), r.color)
             for r in ctx.guild.roles
             if "/" in r.name or r.name in ("Norway", "Just use my name", "All Pronouns")
         ]
