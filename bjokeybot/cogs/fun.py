@@ -1,8 +1,12 @@
 import random
+from io import BytesIO
 
-from bjokeybot.constants import BJOKEY_IMAGE
 from bjokeybot.logger import log
+from discord import File
 from discord.ext import commands
+
+with open("resources/bjokey.png", "rb") as f:
+    bjokey_image = BytesIO(f.read())
 
 
 class FunCog(commands.Cog):
@@ -13,7 +17,10 @@ class FunCog(commands.Cog):
         if random.random() < 0.94:
             await ctx.reply("bjokey")
         else:
-            await ctx.reply("rare bjokey", file=BJOKEY_IMAGE)
+            await ctx.reply(
+                "rare bjokey", file=File(bjokey_image, filename="bjokey.png")
+            )
+            bjokey_image.seek(0)
 
     @commands.command(name="femham")
     async def femham(self, ctx: commands.Context) -> None:
