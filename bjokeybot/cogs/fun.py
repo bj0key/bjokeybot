@@ -12,7 +12,7 @@ with open("resources/bjokey.png", "rb") as f:
 class FunCog(commands.Cog):
     @commands.command(name="bjokey")
     async def bjokey(self, ctx: commands.Context) -> None:
-        "spits out a bjokey into chat"
+        """spits out a bjokey into chat"""
         log.info("%s ran bjokey.", ctx.author.name)
         if random.random() < 0.94:
             await ctx.reply("bjokey")

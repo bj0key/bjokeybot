@@ -1,10 +1,10 @@
-import ast, random, re
-from textwrap import shorten
+import ast
+import random
+import re
 
-from sympy import content
+from discord.ext import commands
 
 from bjokeybot.logger import log
-from discord.ext import commands
 
 EVAL_WHITELIST = (
     ast.Expression,
@@ -25,16 +25,16 @@ class UtilityCog(commands.Cog):
     pattern = re.compile(r"(\d*)d(\d+)\+?(\d*)", re.IGNORECASE)
 
     @commands.command(name="roll")
-    async def diceroll(self, ctx: commands.Context, *, die: str) -> None:
-        "Rolls the specified dice"
+    async def dice_roll(self, ctx: commands.Context, *, die: str) -> None:
+        """Rolls the specified dice"""
         log.info("%s asked to roll %s", ctx.author.name, die)
-        if (mtch := self.pattern.fullmatch(die)) is None:
+        if (regex_match := self.pattern.fullmatch(die)) is None:
             await ctx.reply(
                 "Invalid dice! Please specify in the format `[COUNT]d[SIZE]+[BONUS]`"
             )
             return
 
-        count, size, bonus = mtch.groups()
+        count, size, bonus = regex_match.groups()
         # print(count, size, bonus)
         count = int(count or 1)
         size = int(size)
@@ -70,7 +70,7 @@ class UtilityCog(commands.Cog):
 
     @commands.command(name="eval")
     async def math_eval(self, ctx: commands.Context, *, expr: str = "") -> None:
-        "Safely*™ evaluates an arithemtic expression."
+        """Safely*™ evaluates an arithmetic expression."""
         log.info('%s asked to evaluate "%s"', ctx.author.name, expr)
 
         tree = ast.parse(expr, mode="eval")

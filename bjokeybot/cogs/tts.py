@@ -33,5 +33,3 @@ class TTSCog(commands.Cog):
         async with request("GET", DECTALK_URL, params={"text": msg}) as r:
             with BytesIO(await r.read()) as f:
                 await ctx.reply(file=discord.File(fp=f, filename="tts.wav"))
-
-

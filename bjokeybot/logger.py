@@ -4,7 +4,7 @@ FORMAT = "[%(asctime)s][%(funcName)s] %(levelname)s: %(message)s"
 
 
 def init_logger() -> logging.Logger:
-    "Initialise our logger."
+    """Initialise our logger."""
 
     # log = logging.getLogger(LOG_NAME)
     log.addHandler(logging.FileHandler("latest.log", "w"))
