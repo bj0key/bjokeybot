@@ -1,8 +1,23 @@
-import random, re
+import ast, random, re
 from textwrap import shorten
+
+from sympy import content
 
 from bjokeybot.logger import log
 from discord.ext import commands
+
+EVAL_WHITELIST = (
+    ast.Expression,
+    ast.Call,
+    ast.Name,
+    ast.Load,
+    ast.BinOp,
+    ast.UnaryOp,
+    ast.operator,
+    ast.unaryop,
+    ast.cmpop,
+    ast.Num,
+)
 
 
 class UtilityCog(commands.Cog):
@@ -10,12 +25,13 @@ class UtilityCog(commands.Cog):
     pattern = re.compile(r"(\d*)d(\d+)\+?(\d*)", re.IGNORECASE)
 
     @commands.command(name="roll")
-    async def diceroll(self, ctx: commands.Context, *args: str) -> None:
+    async def diceroll(self, ctx: commands.Context, *, die: str) -> None:
         "Rolls the specified dice"
-        die = "".join(args)
         log.info("%s asked to roll %s", ctx.author.name, die)
-        if (mtch := self.pattern.match(die)) is None:
-            await ctx.reply("Invalid dice! Please specify in the format `2d6`")
+        if (mtch := self.pattern.fullmatch(die)) is None:
+            await ctx.reply(
+                "Invalid dice! Please specify in the format `[COUNT]d[SIZE]+[BONUS]`"
+            )
             return
 
         count, size, bonus = mtch.groups()
@@ -28,7 +44,9 @@ class UtilityCog(commands.Cog):
             await ctx.reply("Too many dice! Dice counts are limited to 5,000.")
             return
         if not 1 <= size <= 1_000_000:
-            await ctx.reply("Dice size out of range! Dice sizes are limited to 1<=d<=1,000,000.")
+            await ctx.reply(
+                "Dice size out of range! Dice sizes are limited to 1<=d<=1,000,000."
+            )
             return
 
         rolls = [random.randint(1, size) for _ in range(count)]
@@ -49,3 +67,28 @@ class UtilityCog(commands.Cog):
             await ctx.reply(
                 f"Your D{size}s rolled {rolls_txt} = **{roll_sum + bonus}**"
             )
+
+    @commands.command(name="eval")
+    async def math_eval(self, ctx: commands.Context, *, expr: str = "") -> None:
+        "Safely*™ evaluates an arithemtic expression."
+        log.info('%s asked to evaluate "%s"', ctx.author.name, expr)
+
+        tree = ast.parse(expr, mode="eval")
+        valid = all(isinstance(node, EVAL_WHITELIST) for node in ast.walk(tree))
+        if valid:
+            result = eval(
+                compile(tree, filename="", mode="eval"),
+                {"__builtins__": None},
+            )
+            await ctx.reply(f"Evaluated {result}")
+            return
+        await ctx.reply("I'm not gonna evaluate that...")
+
+    async def cog_command_error(
+        self, ctx: commands.Context, error: commands.CommandError
+    ):
+        match ctx.command.name:
+            case "eval":
+                await ctx.reply("Invalid expression!")
+            case "roll":
+                await ctx.reply("Invalid dice!")
