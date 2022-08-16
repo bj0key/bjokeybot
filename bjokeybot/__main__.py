@@ -7,7 +7,7 @@ from bjokeybot import cogs, logger
 from bjokeybot.constants import ACCESS_TOKEN
 from bjokeybot.logger import log
 
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 intents.message_content = True
 intents.members = True
 
@@ -24,7 +24,7 @@ async def setup():
 
 
 def main():
-    log.info(f"Starting bot...")
+    log.info("Starting bot...")
     bot.run(ACCESS_TOKEN)
 
 
