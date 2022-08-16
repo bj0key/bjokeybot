@@ -21,7 +21,6 @@ EVAL_WHITELIST = (
 
 
 class UtilityCog(commands.Cog):
-
     pattern = re.compile(r"(\d*)d(\d+)\+?(\d*)", re.IGNORECASE)
 
     @commands.command(name="roll")
@@ -84,8 +83,20 @@ class UtilityCog(commands.Cog):
             return
         await ctx.reply("I'm not gonna evaluate that...")
 
+    @commands.command(name="avatar")
+    async def avatar(self, ctx: commands.Context, username: str = None) -> None:
+        """Gets and replies with the avatar of the user specified. Default to own avatar if not specified."""
+        if not username:
+            username = ctx.author.name
+        log.info("%s asked for %s's avatar.", ctx.author.name, username)
+        user = ctx.guild.get_member_named(username)
+        if user is None:
+            await ctx.reply("⚠ Couldn't find user!")
+        else:
+            await ctx.reply(user.display_avatar.url)
+
     async def cog_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
+            self, ctx: commands.Context, error: commands.CommandError
     ):
         match ctx.command.name:
             case "eval":

@@ -2,7 +2,7 @@ import random
 from io import BytesIO
 
 from bjokeybot.logger import log
-from discord import File
+from discord import File, DiscordException
 from discord.ext import commands
 
 with open("resources/bjokey.png", "rb") as f:
@@ -25,18 +25,16 @@ class FunCog(commands.Cog):
     @commands.command(name="femham")
     async def femham(self, ctx: commands.Context) -> None:
         log.info("%s ran femham.", ctx.author.name)
+        hammed = False
         if ctx.message.author.id == 66183829148151808:
             await ctx.reply("Why are you trying to use the command, cris")
+            hammed = True
         else:
-            await ctx.reply(f"stop femming cris{'tine' * random.randint(0, 1)}")
+            hammed = random.randint(0, 1)
+            await ctx.reply(f"stop femming cris{'tine' * hammed}")
 
-    @commands.command(name="avatar")
-    async def avatar(self, ctx: commands.Context, username: str) -> None:
-        if username == "":
-            username = ctx.author.name
-        log.info("%s asked for %s's avatar.", ctx.author.name, username)
-        user = ctx.guild.get_member_named(username)
-        if user is None:
-            await ctx.reply("⚠ Couldn't find user!")
-        else:
-            await ctx.reply(user.display_avatar.url)
+        if hammed:
+            try:
+                await ctx.author.edit(nick="femhammer " + (ctx.author.nick or ctx.author.name))
+            except DiscordException as e:
+                log.warn("Femham renaming raised exception %s: %s", e.__class__.__name__, str(e).replace("\n", " "))
