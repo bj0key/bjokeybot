@@ -28,4 +28,15 @@ class FunCog(commands.Cog):
         if ctx.message.author.id == 66183829148151808:
             await ctx.reply("Why are you trying to use the command, cris")
         else:
-            await ctx.reply(f"stop femming cris{'tine'*random.randint(0,1)}")
+            await ctx.reply(f"stop femming cris{'tine' * random.randint(0, 1)}")
+
+    @commands.command(name="avatar")
+    async def avatar(self, ctx: commands.Context, username: str) -> None:
+        if username == "":
+            username = ctx.author.name
+        log.info("%s asked for %s's avatar.", ctx.author.name, username)
+        user = ctx.guild.get_member_named(username)
+        if user is None:
+            await ctx.reply("⚠ Couldn't find user!")
+        else:
+            await ctx.reply(user.display_avatar.url)
