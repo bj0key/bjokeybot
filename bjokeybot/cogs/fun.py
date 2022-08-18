@@ -43,7 +43,7 @@ class FunCog(commands.Cog):
                 log.warn("Femham renaming raised exception %s: %s", e.__class__.__name__, str(e).replace("\n", " "))
 
     @commands.command(name="target")
-    async def target(self, ctx: commands.Context, t: str) -> None:
+    async def target(self, ctx: commands.Context, *, t: str) -> None:
         """Drone strike a target"""
         log.info("%s targeted %s.", ctx.author.name, t)
         if t.lower() == "israel":
