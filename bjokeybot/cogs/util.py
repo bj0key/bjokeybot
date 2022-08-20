@@ -98,8 +98,7 @@ class UtilityCog(commands.Cog):
     async def cog_command_error(
             self, ctx: commands.Context, error: commands.CommandError
     ):
-        match ctx.command.name:
-            case "eval":
-                await ctx.reply("Invalid expression!")
-            case "roll":
-                await ctx.reply("Invalid dice!")
+        if ctx.command.name == "eval":
+            await ctx.reply("Invalid expression!")
+        elif ctx.command.name == "roll":
+            await ctx.reply("Invalid dice!")
