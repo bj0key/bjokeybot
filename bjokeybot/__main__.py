@@ -7,20 +7,23 @@ from bjokeybot import cogs, logger
 from bjokeybot.constants import ACCESS_TOKEN
 from bjokeybot.logger import log
 
+logger.init_logger()
+
+
+class BjokeyBot(commands.Bot):
+
+    async def setup_hook(self) -> None:
+        for cog in cogs.all_cogs:
+            await self.add_cog(cog())
+
+
 intents = discord.Intents.all()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="bjokey, ", intents=intents)
+bot = BjokeyBot(command_prefix="bjokey, ", intents=intents)
 
 bot.help_command = None
-
-logger.init_logger()
-
-
-async def setup():
-    for cog in cogs.all_cogs:
-        await bot.add_cog(cog())
 
 
 def main():
@@ -29,5 +32,4 @@ def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(setup())
     main()
