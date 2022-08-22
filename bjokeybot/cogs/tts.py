@@ -3,9 +3,10 @@ from io import BytesIO
 
 import discord
 from aiohttp import request
+from discord.ext import commands
+
 from bjokeybot.constants import DECTALK_URL, TIKTOK_URL
 from bjokeybot.logger import log
-from discord.ext import commands
 
 
 async def get_tiktok(msg) -> bytes:
@@ -17,7 +18,11 @@ async def get_tiktok(msg) -> bytes:
     }
     async with request("POST", TIKTOK_URL, data=data) as r:
         r_json = await r.json()
-    audio = b64decode(r_json["data"]["v_str"])
+    try:
+        audio = b64decode(r_json["data"]["v_str"])
+    except KeyError as e:
+        log.error("Couldn't fetch audio! got %s instead.", r_json)
+        return b""
     return audio
 
 
@@ -36,6 +41,10 @@ class TTSCog(commands.Cog):
         log.info('%s asked the tiktok TTS to say "%s"', ctx.author.name, msg)
 
         audio = await get_tiktok(msg)
+        if len(audio) == 0:
+            await ctx.reply("Command failed! Maybe the TTS service is down? "
+                            "Did you put any naughty words in your message?")
+            return
 
         with BytesIO(audio) as f:
             await ctx.reply(file=discord.File(fp=f, filename="tts.mp3"))
