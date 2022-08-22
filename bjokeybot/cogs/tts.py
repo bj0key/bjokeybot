@@ -55,5 +55,10 @@ class TTSCog(commands.Cog):
         log.info('%s asked the DECTalk TTS to say "%s"', ctx.author.name, msg)
 
         audio = await get_moonbase(msg)
+        if len(audio) == 0:
+            await ctx.reply("Command failed! Maybe the TTS service is down? "
+                            "Did you put any naughty words in your message?")
+            return
+        
         with BytesIO(audio) as f:
             await ctx.reply(file=discord.File(fp=f, filename="tts.wav"))
