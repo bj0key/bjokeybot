@@ -1,13 +1,13 @@
 import asyncio
 import random
-from urllib.parse import urlparse
 from io import BytesIO
+from urllib.parse import urlparse
 
-
-from bjokeybot.logger import log
-from bjokeybot.constants import SCRAN_CHANNEL
 from discord import File, DiscordException
 from discord.ext import commands
+
+from bjokeybot.constants import SCRAN_CHANNEL
+from bjokeybot.logger import log
 
 with open("resources/bjokey.png", "rb") as f:
     bjokey_image = BytesIO(f.read())

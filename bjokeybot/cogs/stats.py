@@ -1,10 +1,11 @@
 from io import BytesIO
+from textwrap import wrap
 
-from bjokeybot.logger import log
 from discord import File
 from discord.ext import commands
 from matplotlib import pyplot as plt
-from textwrap import wrap
+
+from bjokeybot.logger import log
 
 
 class StatsCog(commands.Cog):
