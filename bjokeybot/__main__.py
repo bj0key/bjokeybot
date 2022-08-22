@@ -17,7 +17,7 @@ class BjokeyBot(commands.Bot):
             await self.add_cog(cog(self))
 
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
