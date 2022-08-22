@@ -14,6 +14,9 @@ with open("resources/bjokey.png", "rb") as f:
 
 
 class FunCog(commands.Cog):
+    def __int__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+
     @commands.command(name="bjokey")
     async def bjokey(self, ctx: commands.Context) -> None:
         """spits out a bjokey into chat"""

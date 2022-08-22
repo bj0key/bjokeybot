@@ -27,6 +27,8 @@ async def get_moonbase(msg) -> bytes:
 
 
 class TTSCog(commands.Cog):
+    def __int__(self, bot: commands.Bot) -> None:
+        self.bot = bot
 
     @commands.command(name="tiktok")
     async def tiktok(self, ctx: commands.Context, *args: str) -> None:

@@ -8,6 +8,9 @@ from textwrap import wrap
 
 
 class StatsCog(commands.Cog):
+    def __int__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+
     @commands.command(name="genders")
     async def genders(self, ctx: commands.Context) -> None:
         log.info("%s ran genders.", ctx.author.name)
