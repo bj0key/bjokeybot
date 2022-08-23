@@ -5,11 +5,12 @@ from discord import File
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
+from bjokeybot.bot import BjokeyBot
 from bjokeybot.logger import log
 
 
 class StatsCog(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: BjokeyBot) -> None:
         self.bot = bot
 
     @commands.command(name="uptime")

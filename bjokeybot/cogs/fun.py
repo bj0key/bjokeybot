@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from discord import File, DiscordException
 from discord.ext import commands
 
+from bjokeybot.bot import BjokeyBot
 from bjokeybot.constants import SCRAN_CHANNEL
 from bjokeybot.logger import log
 
@@ -14,7 +15,7 @@ with open("resources/bjokey.png", "rb") as f:
 
 
 class FunCog(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: BjokeyBot) -> None:
         self.bot = bot
 
     @commands.command(name="bjokey")

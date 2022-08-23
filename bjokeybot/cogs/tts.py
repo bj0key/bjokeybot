@@ -5,6 +5,7 @@ import discord
 from aiohttp import request
 from discord.ext import commands
 
+from bjokeybot.bot import BjokeyBot
 from bjokeybot.constants import DECTALK_URL, TIKTOK_URL
 from bjokeybot.logger import log
 
@@ -32,7 +33,7 @@ async def get_moonbase(msg) -> bytes:
 
 
 class TTSCog(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: BjokeyBot) -> None:
         self.bot = bot
 
     @commands.command(name="tiktok")
@@ -59,6 +60,6 @@ class TTSCog(commands.Cog):
             await ctx.reply("Command failed! Maybe the TTS service is down? "
                             "Did you put any naughty words in your message?")
             return
-        
+
         with BytesIO(audio) as f:
             await ctx.reply(file=discord.File(fp=f, filename="tts.wav"))

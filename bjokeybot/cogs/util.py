@@ -4,6 +4,7 @@ import re
 
 from discord.ext import commands
 
+from bjokeybot.bot import BjokeyBot
 from bjokeybot.logger import log
 
 EVAL_WHITELIST = (
@@ -21,7 +22,7 @@ EVAL_WHITELIST = (
 
 
 class UtilityCog(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: BjokeyBot) -> None:
         self.bot = bot
 
     pattern = re.compile(r"(\d*)d(\d+)\+?(\d*)", re.IGNORECASE)
