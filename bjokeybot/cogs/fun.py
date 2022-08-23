@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 from discord import File, DiscordException
 from discord.ext import commands
 
-
 from bjokeybot.constants import SCRAN_CHANNEL
 from bjokeybot.logger import log
 

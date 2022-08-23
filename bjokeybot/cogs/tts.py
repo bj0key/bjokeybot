@@ -5,7 +5,6 @@ import discord
 from aiohttp import request
 from discord.ext import commands
 
-
 from bjokeybot.constants import DECTALK_URL, TIKTOK_URL
 from bjokeybot.logger import log
 
