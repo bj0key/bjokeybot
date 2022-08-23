@@ -12,6 +12,10 @@ class StatsCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+    @commands.command(name="uptime")
+    async def uptime(self, ctx: commands.Context) -> None:
+        ...
+
     @commands.command(name="genders")
     async def genders(self, ctx: commands.Context) -> None:
         log.info("%s ran genders.", ctx.author.name)
