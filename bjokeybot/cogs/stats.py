@@ -1,4 +1,4 @@
-from datetime import datetime
+from time import time
 from io import BytesIO
 from textwrap import wrap
 
@@ -12,15 +12,16 @@ from bjokeybot.logger import log
 class StatsCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.start_time = datetime.now()
+        self.start_time = time()
 
     @commands.command(name="uptime")
     async def uptime(self, ctx: commands.Context) -> None:
         log.info("%s ran uptime", ctx.author.name)
-        dt = datetime.now() - self.start_time
-        await ctx.send(
-            "The bot has been running for "
-            f"{dt.days}:{dt.seconds // 3600:02}:{(dt.seconds % 3600) // 60:02}:{dt.seconds % 60:02}")
+        secs = int(time() - self.start_time)
+        mins, secs = divmod(secs, 60)
+        hours, mins = divmod(mins, 60)
+        days, hours = divmod(hours, 24)
+        await ctx.send(f"The bot has been running for {days}:{hours:02}:{mins:02}:{secs:02}")
 
     @commands.command(name="genders")
     async def genders(self, ctx: commands.Context) -> None:
