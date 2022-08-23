@@ -1,3 +1,4 @@
+from datetime import datetime
 from io import BytesIO
 from textwrap import wrap
 
@@ -5,17 +6,21 @@ from discord import File
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
-from bjokeybot.bot import BjokeyBot
 from bjokeybot.logger import log
 
 
 class StatsCog(commands.Cog):
-    def __init__(self, bot: BjokeyBot) -> None:
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self.start_time = datetime.now()
 
     @commands.command(name="uptime")
     async def uptime(self, ctx: commands.Context) -> None:
-        ...
+        log.info("%s ran uptime", ctx.author.name)
+        dt = datetime.now() - self.start_time
+        await ctx.send(
+            "The bot has been running for "
+            f"{dt.days}:{dt.seconds // 3600:02}:{(dt.seconds % 3600) // 60:02}:{dt.seconds % 60:02}")
 
     @commands.command(name="genders")
     async def genders(self, ctx: commands.Context) -> None:
