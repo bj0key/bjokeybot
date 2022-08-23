@@ -9,7 +9,7 @@ from bjokeybot.logger import log
 
 
 class StatsCog(commands.Cog):
-    def __int__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @commands.command(name="genders")

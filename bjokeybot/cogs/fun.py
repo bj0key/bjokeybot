@@ -14,7 +14,7 @@ with open("resources/bjokey.png", "rb") as f:
 
 
 class FunCog(commands.Cog):
-    def __int__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @commands.command(name="bjokey")

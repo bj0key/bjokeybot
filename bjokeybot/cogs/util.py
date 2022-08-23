@@ -21,7 +21,7 @@ EVAL_WHITELIST = (
 
 
 class UtilityCog(commands.Cog):
-    def __int__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     pattern = re.compile(r"(\d*)d(\d+)\+?(\d*)", re.IGNORECASE)
