@@ -17,11 +17,12 @@ class StatsCog(commands.Cog):
     @commands.command(name="uptime")
     async def uptime(self, ctx: commands.Context) -> None:
         log.info("%s ran uptime", ctx.author.name)
-        secs = int(time() - self.start_time)
-        mins, secs = divmod(secs, 60)
-        hours, mins = divmod(mins, 60)
-        days, hours = divmod(hours, 24)
-        await ctx.send(f"The bot has been running for {days}:{hours:02}:{mins:02}:{secs:02}")
+        await ctx.send(f"The bot has been up since <t:{int(self.start_time)}>")
+        # secs = int(time() - self.start_time)
+        # mins, secs = divmod(secs, 60)
+        # hours, mins = divmod(mins, 60)
+        # days, hours = divmod(hours, 24)
+        # await ctx.send(f"The bot has been running for {days}:{hours:02}:{mins:02}:{secs:02}")
 
     @commands.command(name="genders")
     async def genders(self, ctx: commands.Context) -> None:
