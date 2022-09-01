@@ -93,7 +93,6 @@ class FunCog(commands.Cog):
     async def rtd(self, ctx: commands.Context) -> None:
         log.info("%s rolled the dice.", ctx.author.name)
         roll = random.randrange(6)
-        print(roll)
         if roll == 0:
             await ctx.reply("Lucky bugger! Nothing happened...")
         elif roll == 1:
