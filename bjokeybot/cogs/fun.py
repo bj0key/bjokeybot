@@ -1,8 +1,10 @@
 import asyncio
 import random
+from datetime import timedelta
 from io import BytesIO
 from urllib.parse import urlparse
 
+import discord.types.snowflake
 from discord import File, DiscordException
 from discord.ext import commands
 
@@ -85,3 +87,31 @@ class FunCog(commands.Cog):
                     scran.append(msg.content)
 
         await ctx.reply(random.choice(scran))
+
+    @commands.command(name="rtd")
+    async def rtd(self, ctx: commands.Context) -> None:
+        log.info("%s rolled the dice.", ctx.author.name)
+        roll = random.randrange(5)
+        if roll == 0:
+            await ctx.reply("Lucky bugger! Nothing happened...")
+        elif roll == 1:
+            try:
+                await ctx.author.timeout(timedelta(seconds=60))
+                await ctx.reply("Oooh, unlucky! Timed out...")
+            except discord.DiscordException as e:
+                log.error("Failed to rename %s", ctx.author.name)
+                await ctx.reply("Uh, please time yourself out for a minute...")
+        elif roll == 2:
+            for role in ctx.author.roles:
+                if "/" in role.name:
+                    await ctx.author.remove_roles(role)
+            await ctx.author.add_roles(ctx.guild.get_role(956614175059214396), reason="funny")
+            await ctx.reply("BAM! YOu'RE A WOMAN! AHAHAHAHAHA!!!!")
+        elif roll == 3:
+            name = ctx.author.nick or ctx.author.name
+            await ctx.author.edit(nick=name.replace("r", "w").replace("l", "w").replace("o", "OwO")[:30]+":3")
+            await ctx.reply("FURRY ALERT!")
+        elif roll == 4:
+            name = (ctx.author.nick or ctx.author.name)[:31]
+            await ctx.author.edit(nick=name + "_", reason="beast mode activated")
+            await ctx.reply("crool mode activated...")
