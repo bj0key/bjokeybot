@@ -3,12 +3,13 @@ import random
 from datetime import timedelta
 from io import BytesIO
 from urllib.parse import urlparse
+from aiohttp import request
 
 import discord.types.snowflake
 from discord import File, DiscordException
 from discord.ext import commands
 
-from bjokeybot.constants import SCRAN_CHANNEL
+from bjokeybot.constants import SCRAN_CHANNEL, CATAAS_URL
 from bjokeybot.logger import log
 
 with open("resources/bjokey.png", "rb") as f:
@@ -91,7 +92,8 @@ class FunCog(commands.Cog):
     @commands.command(name="rtd")
     async def rtd(self, ctx: commands.Context) -> None:
         log.info("%s rolled the dice.", ctx.author.name)
-        roll = random.randrange(5)
+        roll = random.randrange(6)
+        print(roll)
         if roll == 0:
             await ctx.reply("Lucky bugger! Nothing happened...")
         elif roll == 1:
@@ -116,5 +118,7 @@ class FunCog(commands.Cog):
             await ctx.author.edit(nick=name + "_", reason="beast mode activated")
             await ctx.reply("crool mode activated...")
         elif roll == 5:
-            ctx.author.reply("POW! HAHA. \n https://wiki.teamfortress.com/w/images/1/1a/Heavyshowdowntauntkill.PNG")
-            ctx.author.kick(reason="User got kicked via RTD. Poor sod.")
+            async with request("GET", f"{CATAAS_URL}") as r:
+                image = BytesIO(await r.read())
+                await ctx.reply("you rolled a funny creature", file=discord.File(image, filename="cat.png"))
+
