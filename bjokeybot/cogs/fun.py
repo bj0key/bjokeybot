@@ -115,3 +115,6 @@ class FunCog(commands.Cog):
             name = (ctx.author.nick or ctx.author.name)[:31]
             await ctx.author.edit(nick=name + "_", reason="beast mode activated")
             await ctx.reply("crool mode activated...")
+        elif roll == 5:
+            ctx.author.reply("POW! HAHA. \n https://wiki.teamfortress.com/w/images/1/1a/Heavyshowdowntauntkill.PNG")
+            ctx.author.kick(reason="User got kicked via RTD. Poor sod.")
