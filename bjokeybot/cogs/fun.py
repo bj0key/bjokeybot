@@ -96,20 +96,27 @@ class FunCog(commands.Cog):
             await ctx.reply("Lucky bugger! Nothing happened...")
         elif roll == 1:
             try:
-                await ctx.author.timeout(timedelta(seconds=60))
+                await ctx.author.timeout(timedelta(seconds=10))
                 await ctx.reply("Oooh, unlucky! Timed out...")
             except discord.DiscordException as e:
                 log.error("Failed to rename %s", ctx.author.name)
                 await ctx.reply("Uh, please time yourself out for a minute...")
         elif roll == 2:
+            she_her_role = ctx.guild.get_role(956614175059214396)
+            real_genders = []
             for role in ctx.author.roles:
                 if "/" in role.name:
+                    real_genders.append(role)
                     await ctx.author.remove_roles(role)
-            await ctx.author.add_roles(ctx.guild.get_role(956614175059214396), reason="funny")
+            await ctx.author.add_roles(she_her_role, reason="funny")
             await ctx.reply("BAM! YOu'RE A WOMAN! AHAHAHAHAHA!!!!")
+            await asyncio.sleep(30)
+            await ctx.author.remove_roles(she_her_role, reason="undoing the funny")
+            await ctx.author.add_roles(*real_genders)
+
         elif roll == 3:
             name = ctx.author.nick or ctx.author.name
-            await ctx.author.edit(nick=name.replace("r", "w").replace("l", "w").replace("o", "OwO")[:30]+":3")
+            await ctx.author.edit(nick=name.replace("r", "w").replace("l", "w").replace("o", "OwO")[:30] + ":3")
             await ctx.reply("FURRY ALERT!")
         elif roll == 4:
             name = (ctx.author.nick or ctx.author.name)[:31]
