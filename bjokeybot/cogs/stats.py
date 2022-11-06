@@ -47,6 +47,7 @@ class StatsCog(commands.Cog):
                 zorder=10,
             )
 
+        plt.xticks(rotation=-30)
         plt.yticks(range(0, max(v[1] for v in genders) + 1))
         with BytesIO() as f:
             plt.savefig(f, format="png")
