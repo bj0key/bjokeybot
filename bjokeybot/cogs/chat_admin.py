@@ -11,9 +11,11 @@ class ChatAdminCog(BjokeyCog):
 
         if not ctx.author.guild_permissions.administrator:
             await ctx.reply("You're not an admin, shoo!")
+            return
 
         if ctx.author.voice is None:
             await ctx.reply("You can only silence people if you're in a voice channel!")
+            return
 
         if len(names) < 2 or names[-1] != "speak":
             await ctx.reply("Bad usage! Either let everyone speak, let noone speak, or let user1 user2 ... speak")
