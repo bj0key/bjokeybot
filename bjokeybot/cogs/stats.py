@@ -1,17 +1,18 @@
-from time import time
 from io import BytesIO
 from textwrap import wrap
+from time import time
 
 from discord import File
 from discord.ext import commands
 from matplotlib import pyplot as plt
 
 from bjokeybot.logger import log
+from .base import BjokeyCog
 
 
-class StatsCog(commands.Cog):
+class StatsCog(BjokeyCog):
     def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
+        super().__init__(bot)
         self.start_time = time()
 
     @commands.command(name="uptime")

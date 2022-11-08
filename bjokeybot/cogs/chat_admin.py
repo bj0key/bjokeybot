@@ -1,11 +1,10 @@
 from discord.ext import commands
+
 from bjokeybot.logger import log
+from .base import BjokeyCog
 
 
-class ChatAdminCog(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
-
+class ChatAdminCog(BjokeyCog):
     @commands.command(name="let", )
     async def voice_control(self, ctx: commands.Context, *names: str) -> None:
         log.info("%s used the speech command, with args %s", ctx.author.name, names)

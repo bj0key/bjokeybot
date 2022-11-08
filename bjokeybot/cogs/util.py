@@ -5,6 +5,7 @@ import re
 from discord.ext import commands
 
 from bjokeybot.logger import log
+from .base import BjokeyCog
 
 EVAL_WHITELIST = (
     ast.Expression,
@@ -20,10 +21,7 @@ EVAL_WHITELIST = (
 )
 
 
-class UtilityCog(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
-
+class UtilityCog(BjokeyCog):
     pattern = re.compile(r"(\d*)d(\d+)\+?(\d*)", re.IGNORECASE)
 
     @commands.command(name="roll")

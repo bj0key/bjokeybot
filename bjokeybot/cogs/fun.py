@@ -3,22 +3,21 @@ import random
 from datetime import timedelta
 from io import BytesIO
 from urllib.parse import urlparse
-from aiohttp import request
 
 import discord.types.snowflake
+from aiohttp import request
 from discord import File, DiscordException
 from discord.ext import commands
 
 from bjokeybot.constants import SCRAN_CHANNEL, CATAAS_URL
 from bjokeybot.logger import log
+from .base import BjokeyCog
 
 with open("resources/bjokey.png", "rb") as f:
     bjokey_image = BytesIO(f.read())
 
 
-class FunCog(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
+class FunCog(BjokeyCog):
 
     @commands.command(name="bjokey")
     async def bjokey(self, ctx: commands.Context) -> None:
@@ -127,4 +126,3 @@ class FunCog(commands.Cog):
             async with request("GET", f"{CATAAS_URL}") as r:
                 image = BytesIO(await r.read())
                 await ctx.reply("you rolled a funny creature", file=discord.File(image, filename="cat.png"))
-

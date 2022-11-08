@@ -7,6 +7,7 @@ from discord.ext import commands
 
 from bjokeybot.constants import DECTALK_URL, TIKTOK_URL
 from bjokeybot.logger import log
+from .base import BjokeyCog
 
 
 async def get_tiktok(msg) -> bytes:
@@ -31,9 +32,7 @@ async def get_moonbase(msg) -> bytes:
         return await r.read()
 
 
-class TTSCog(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
+class TTSCog(BjokeyCog):
 
     @commands.command(name="tiktok")
     async def tiktok(self, ctx: commands.Context, *args: str) -> None:
