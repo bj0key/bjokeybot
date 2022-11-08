@@ -21,7 +21,7 @@ async def get_tiktok(msg) -> bytes:
         r_json = await r.json()
     try:
         audio = b64decode(r_json["data"]["v_str"])
-    except KeyError as e:
+    except KeyError:
         log.error("Couldn't fetch audio! got %s instead.", r_json)
         return b""
     return audio
