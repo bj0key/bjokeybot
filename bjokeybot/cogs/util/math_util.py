@@ -4,8 +4,8 @@ import re
 
 from discord.ext import commands
 
+from bjokeybot.cogs.base import BjokeyCog
 from bjokeybot.logger import log
-from .base import BjokeyCog
 
 EVAL_WHITELIST = (
     ast.Expression,
@@ -21,14 +21,14 @@ EVAL_WHITELIST = (
 )
 
 
-class UtilityCog(BjokeyCog):
-    pattern = re.compile(r"(\d*)d(\d+)\+?(\d*)", re.IGNORECASE)
+class MathUtilityCog(BjokeyCog):
+    dice_pattern = re.compile(r"(\d*)d(\d+)\+?(\d*)", re.IGNORECASE)
 
     @commands.command(name="roll")
     async def dice_roll(self, ctx: commands.Context, *, die: str) -> None:
         """Rolls the specified dice"""
         log.info("%s asked to roll %s", ctx.author.name, die)
-        if (regex_match := self.pattern.fullmatch(die)) is None:
+        if (regex_match := self.dice_pattern.fullmatch(die)) is None:
             await ctx.reply(
                 "Invalid dice! Please specify in the format `[COUNT]d[SIZE]+[BONUS]`"
             )
@@ -83,18 +83,6 @@ class UtilityCog(BjokeyCog):
             await ctx.reply(f"Evaluated {result}")
             return
         await ctx.reply("I'm not gonna evaluate that...")
-
-    @commands.command(name="avatar")
-    async def avatar(self, ctx: commands.Context, username: str = None) -> None:
-        """Gets and replies with the avatar of the user specified. Default to own avatar if not specified."""
-        if not username:
-            username = ctx.author.name
-        log.info("%s asked for %s's avatar.", ctx.author.name, username)
-        user = ctx.guild.get_member_named(username)
-        if user is None:
-            await ctx.reply("⚠ Couldn't find user!")
-        else:
-            await ctx.reply(user.display_avatar.url)
 
     async def cog_command_error(
             self, ctx: commands.Context, error: commands.CommandError
