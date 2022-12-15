@@ -1,1 +1,3 @@
-from .util import UtilityCog
+from .util import GeneralUtilityCog
+from .math_util import MathUtilityCog
+
