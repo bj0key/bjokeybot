@@ -4,8 +4,8 @@ import re
 
 from discord.ext import commands
 
-from bjokeybot.logger import log
 from bjokeybot.cogs.base import BjokeyCog
+from bjokeybot.logger import log
 
 EVAL_WHITELIST = (
     ast.Expression,
