@@ -109,6 +109,7 @@ async def add_rating(rating: Rating, *, replace_existing: bool = False) -> None:
             command,
             (rating.album, rating.dogger, rating.score),
         )
+        await conn.commit()
 
 
 async def add_album(album: Album) -> None:
@@ -165,7 +166,7 @@ class DoggingCog(BjokeyCog):
         return choices
 
     @app_commands.command(
-        name="summary", description="Check the scores for a given album"
+        name="summary", description="Summarize the scores for an album."
     )
     @app_commands.autocomplete(album_title=album_autocomplete)
     async def summary(self, interaction: Interaction, album_title: str) -> None:
@@ -200,7 +201,7 @@ class DoggingCog(BjokeyCog):
             ephemeral=False,
         )
 
-    @app_commands.command(name="rate", description="Add a score to the database")
+    @app_commands.command(name="rate", description="Rate an album!")
     @app_commands.autocomplete(album_title=album_autocomplete)
     async def rate(
         self, interaction: Interaction, album_title: str, score: int
@@ -283,7 +284,7 @@ class DoggingCog(BjokeyCog):
         dm = await ctx.author.create_dm()
         await dm.send(file=db_file)
 
-    @app_commands.command(name="dogjson")
+    @app_commands.command(name="dogjson", description="get all the dogging data in nerd form, you probably don't want this")
     async def export_json(self, interaction: Interaction) -> None:
         data = {}
         all_albums = await fetch_albums_from_title("")
@@ -293,7 +294,7 @@ class DoggingCog(BjokeyCog):
             scores = await fetch_ratings(album)
             album_data["scores"] = {s.dogger: s.score for s in scores}
             data[album.id + 1] = album_data
-        file_data = BytesIO(dumps(data).encode("utf8"))
+        file_data = BytesIO(dumps(data, indent=4).encode("utf8"))
         file_data.seek(0)
         file = discord.File(file_data, filename="dogging.json")
         await interaction.response.send_message(file=file)
