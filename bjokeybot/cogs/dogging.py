@@ -233,6 +233,7 @@ class DoggingCog(BjokeyCog):
             await interaction.edit_original_response(
                 content=f"{score}/100 is just plain silly, be fr"
             )
+            return
 
         album = await fetch_album_from_title(album_title)
         if album is None:
@@ -424,6 +425,8 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
                 errors.append(
                     "User ID is valid, but not in this server. Run command in DMs to ignore membership test."
                 )
+            else:
+                choice_id = user.id
         else:
             # int conversion failed, treat it as a username
             if self.guild is None:
