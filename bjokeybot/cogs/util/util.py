@@ -38,7 +38,7 @@ ANSI_TAGS = {
     "bggray": 44,
     "bgindigo": 45,
     "bglgray": 46,
-    "bgwhite": 47
+    "bgwhite": 47,
 }
 
 ANSI_PATTERN = re.compile(r"\$\[(\w+?)]")
@@ -76,6 +76,5 @@ class GeneralUtilityCog(BjokeyCog):
     @commands.command(name="sync")
     @commands.is_owner()
     async def sync_tree(self, ctx: commands.Context) -> None:
-        msg = await ctx.reply("Syncing...")
         await self.bot.tree.sync()
         await ctx.message.add_reaction("✅")
