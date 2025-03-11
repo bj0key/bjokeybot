@@ -56,6 +56,9 @@ class GeneralUtilityCog(BjokeyCog):
         if not username:
             username = ctx.author.name
         log.info("%s asked for %s's avatar.", ctx.author.name, username)
+        if ctx.guild is None:
+            await ctx.reply("This only works in the server.")
+            return
         user = ctx.guild.get_member_named(username)
         if user is None:
             await ctx.reply("⚠ Couldn't find user!")
