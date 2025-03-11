@@ -69,3 +69,10 @@ class GeneralUtilityCog(BjokeyCog):
             await ctx.reply(f"```ansi\n{subbed_out}```")
         except KeyError as e:
             await ctx.reply(f"⚠ Uuh, I don't know what colour {e} is meant to be...")
+
+    @commands.command(name="sync")
+    @commands.is_owner()
+    async def sync_tree(self, ctx: commands.Context) -> None:
+        msg = await ctx.reply("Syncing...")
+        await self.bot.tree.sync()
+        await msg.edit(content=msg.content + " done!")
