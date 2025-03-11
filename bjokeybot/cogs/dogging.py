@@ -28,6 +28,15 @@ class Rating(NamedTuple):
     dogger: int
     score: int
 
+class Amalgamation(NamedTuple):
+    id: int
+    season: int
+    date: str
+    choice: int
+    artist: str
+    title: str
+    score: int
+
 
 DB_FILEPATH = "../dogging.sqlite3"
 DAYS_TO_CHANGE_SCORE = 1
@@ -43,6 +52,9 @@ def like(s: str) -> str:
 
 def album_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Album:
     return Album(*row)
+
+def almalgamation_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Amalgamation:
+    return Amalgamation(*row)
 
 
 def rating_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Rating:
@@ -89,6 +101,15 @@ async def fetch_album_from_title(title: str) -> Album | None:
         )
         return await cur.fetchone()  # type: ignore
 
+async def fetch_albums_for_user(user_id: int) -> list[Amalgamation]:
+    async with db_conn() as conn:
+        conn.row_factory = almalgamation_factory # type: ignore
+        cur = await conn.execute(
+            """select id, season, date, choice, artist, title, score from ratings
+            inner join Albums ON ratings.album=Albums.id
+            where dogger = ?""", (user_id, )
+        )
+        return list(await cur.fetchall())
 
 async def fetch_specific_rating(album: Album, user_id: int) -> Rating | None:
     async with db_conn() as conn:
@@ -212,7 +233,6 @@ class DoggingCog(BjokeyCog):
             await interaction.edit_original_response(
                 content=f"{score}/100 is just plain silly, be fr"
             )
-            return
 
         album = await fetch_album_from_title(album_title)
         if album is None:
@@ -240,7 +260,7 @@ class DoggingCog(BjokeyCog):
                 return
 
             await interaction.edit_original_response(
-                content=f"⚠ You already have a score for {album.artist} - {album.title} ({old_rating.score}/100). Want to replace it?",
+                content=f"ÔÜá You already have a score for {album.artist} - {album.title} ({old_rating.score}/100). Want to replace it?",
                 view=ReplaceRatingsView(old_rating, rating),
             )
 
@@ -273,7 +293,7 @@ class DoggingCog(BjokeyCog):
 
         rating = Rating(album.id, dogger.id, score)
         await add_rating(rating, replace_existing=True)
-        await ctx.message.add_reaction("✅")
+        await ctx.message.add_reaction("Ô£à")
         await ctx.reply(
             f"Set rating for {album.title} by {dogger.name} to be {score}/100"
         )
@@ -300,6 +320,23 @@ class DoggingCog(BjokeyCog):
         file = discord.File(file_data, filename="dogging.json")
         await interaction.response.send_message(file=file)
 
+    @app_commands.command(name="ratings", description="see a users ratings")
+    async def see_ratings(self, interaction: Interaction, dogger: discord.Member) -> None:
+        albums = await fetch_albums_for_user(dogger.id)
+        if len(albums) == 0:
+            await interaction.response.send_message(
+                "This user hasn't rated any albums."
+            )
+            return
+        output = []
+        output.append(f"**{dogger.name}** has rated these albums:")
+        # make this look nice ty :) - cris
+        output.append("```")
+        for album in albums:
+            output.append(f"{album.title} | {album.score}")
+        output.append("```")
+        output = "\r\n".join(output)
+        await interaction.response.send_message(output)
 
 class ReplaceRatingsView(discord.ui.View):
     def __init__(self, old: Rating, new: Rating, *, timeout: float | None = 180):
@@ -387,8 +424,6 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
                 errors.append(
                     "User ID is valid, but not in this server. Run command in DMs to ignore membership test."
                 )
-            else:
-                choice_id = user.id
         else:
             # int conversion failed, treat it as a username
             if self.guild is None:
@@ -417,7 +452,9 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
         try:
             album = await self.get_and_validate_input()
         except ValueError as e:
-            err_output = f"Error(s) when adding album:\n{"\n".join(e.args)}"
+            # this was broke when i got here - cris
+            # err_output = f"Error(s) when adding album:\n{'\n'.join(e.args)}"
+            err_output = "uhhh"
             await interaction.response.send_message(content=err_output, ephemeral=True)
             return
 
