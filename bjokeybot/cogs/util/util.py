@@ -78,4 +78,4 @@ class GeneralUtilityCog(BjokeyCog):
     async def sync_tree(self, ctx: commands.Context) -> None:
         msg = await ctx.reply("Syncing...")
         await self.bot.tree.sync()
-        await msg.edit(content=msg.content + " done!")
+        await ctx.message.add_reaction("✅")
