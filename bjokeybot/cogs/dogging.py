@@ -260,7 +260,7 @@ class DoggingCog(BjokeyCog):
                 return
 
             await interaction.edit_original_response(
-                content=f"ÔÜá You already have a score for {album.artist} - {album.title} ({old_rating.score}/100). Want to replace it?",
+                content=f"⚠ You already have a score for {album.artist} - {album.title} ({old_rating.score}/100). Want to replace it?",
                 view=ReplaceRatingsView(old_rating, rating),
             )
 
@@ -293,7 +293,7 @@ class DoggingCog(BjokeyCog):
 
         rating = Rating(album.id, dogger.id, score)
         await add_rating(rating, replace_existing=True)
-        await ctx.message.add_reaction("Ô£à")
+        await ctx.message.add_reaction("✅")
         await ctx.reply(
             f"Set rating for {album.title} by {dogger.name} to be {score}/100"
         )
