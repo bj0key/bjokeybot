@@ -28,6 +28,7 @@ class Rating(NamedTuple):
     dogger: int
     score: int
 
+
 class Amalgamation(NamedTuple):
     id: int
     season: int
@@ -52,6 +53,7 @@ def like(s: str) -> str:
 
 def album_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Album:
     return Album(*row)
+
 
 def almalgamation_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Amalgamation:
     return Amalgamation(*row)
@@ -101,15 +103,18 @@ async def fetch_album_from_title(title: str) -> Album | None:
         )
         return await cur.fetchone()  # type: ignore
 
+
 async def fetch_albums_for_user(user_id: int) -> list[Amalgamation]:
     async with db_conn() as conn:
-        conn.row_factory = almalgamation_factory # type: ignore
+        conn.row_factory = almalgamation_factory  # type: ignore
         cur = await conn.execute(
             """select id, season, date, choice, artist, title, score from ratings
             inner join Albums ON ratings.album=Albums.id
-            where dogger = ?""", (user_id, )
+            where dogger = ?""",
+            (user_id,),
         )
         return list(await cur.fetchall())
+
 
 async def fetch_specific_rating(album: Album, user_id: int) -> Rating | None:
     async with db_conn() as conn:
@@ -306,7 +311,10 @@ class DoggingCog(BjokeyCog):
         dm = await ctx.author.create_dm()
         await dm.send(file=db_file)
 
-    @app_commands.command(name="dogjson", description="get all the dogging data in nerd form, you probably don't want this")
+    @app_commands.command(
+        name="dogjson",
+        description="get all the dogging data in nerd form, you probably don't want this",
+    )
     async def export_json(self, interaction: Interaction) -> None:
         data = {}
         all_albums = await fetch_albums_from_title("")
@@ -322,7 +330,9 @@ class DoggingCog(BjokeyCog):
         await interaction.response.send_message(file=file)
 
     @app_commands.command(name="ratings", description="see a users ratings")
-    async def see_ratings(self, interaction: Interaction, dogger: discord.Member) -> None:
+    async def see_ratings(
+        self, interaction: Interaction, dogger: discord.Member
+    ) -> None:
         albums = await fetch_albums_for_user(dogger.id)
         if len(albums) == 0:
             await interaction.response.send_message(
@@ -338,6 +348,7 @@ class DoggingCog(BjokeyCog):
         output.append("```")
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
+
 
 class ReplaceRatingsView(discord.ui.View):
     def __init__(self, old: Rating, new: Rating, *, timeout: float | None = 180):
@@ -455,9 +466,8 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
         try:
             album = await self.get_and_validate_input()
         except ValueError as e:
-            # this was broke when i got here - cris
-            # err_output = f"Error(s) when adding album:\n{'\n'.join(e.args)}"
-            err_output = "uhhh"
+            errors = "\n".join(e.args)
+            err_output = f"Error(s) when adding album:\n{errors}"
             await interaction.response.send_message(content=err_output, ephemeral=True)
             return
 
