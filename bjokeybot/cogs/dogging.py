@@ -380,7 +380,7 @@ class DoggingCog(BjokeyCog):
         # make this look nice ty :) - cris
         output.append("```")
         for album in albums:
-            output.append(f"{album.title} | {album.score}")
+            output.append(f"{album.artist} - {album.title} | {album.score}")
         output.append("```")
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
@@ -396,7 +396,7 @@ class DoggingCog(BjokeyCog):
         output.append("The top 10 albums:")
         output.append("```")
         for album in albums:
-            output.append(f"{album.title} - {album.artist}: {album.average}")
+            output.append(f"{album.artist} - {album.title} - {album.artist}: {album.average}")
         output.append("```")
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
