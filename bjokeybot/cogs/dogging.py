@@ -50,6 +50,16 @@ DAYS_TO_CHANGE_SCORE = 1
 def db_conn() -> aiosqlite.Connection:
     return aiosqlite.connect(DB_FILEPATH)
 
+def unlistened_output_header(percentage: float) -> str:
+    responses = {
+        80.0: "So close now...",
+        60.0: "You're over half way!",
+        40.0: "You're on the right track...",
+        20.0: "You're getting there...",
+        0.0: "Not even a dent..."
+    }
+    return [responses[resp] for resp in responses.keys() if percentage > resp][0]
+
 def like(s: str) -> str:
     return f"%{s}%"
 
@@ -97,6 +107,21 @@ async def fetch_albums_from_title(title: str) -> list[Album]:
         )
         return list(await cur.fetchall())  # type: ignore
 
+async def fetch_unlistened_albums(user_id: int) -> list[Album]:
+    async with db_conn() as conn:
+        conn.row_factory = album_factory  # type: ignore
+        cur = await conn.execute(
+            "select * from Albums where not exists (select * from Ratings where Ratings.album=Albums.id and Ratings.dogger = ?)", (user_id, )
+        )
+        return await cur.fetchall()  # type: ignore
+
+async def count_of_all_albums() -> int:
+    async with db_conn() as conn:
+        # conn.row_factory = album_factory  # type: ignore
+        cur = await conn.execute(
+            "select count(*) from albums"
+        )
+        return await cur.fetchone()  # type: ignore
 
 async def fetch_album_from_title(title: str) -> Album | None:
     async with db_conn() as conn:
@@ -105,7 +130,6 @@ async def fetch_album_from_title(title: str) -> Album | None:
             "SELECT * FROM Albums WHERE title LIKE ?;", (like(title),)
         )
         return await cur.fetchone()  # type: ignore
-
 
 async def fetch_albums_for_user(user_id: int) -> list[Amalgamation]:
     async with db_conn() as conn:
@@ -376,6 +400,28 @@ class DoggingCog(BjokeyCog):
         output.append("```")
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
+
+    @app_commands.command(name="unlistened", description="shows what albums you haven't listened to")
+    async def unlistened(self, interaction: Interaction) -> None:
+        
+        albums = await fetch_unlistened_albums(interaction.user.id)
+        if len(albums) == 0:
+            await interaction.response.send_message("You've listened to every album :)")
+        else:
+            output = []
+            total = (await count_of_all_albums())[0]
+            amount_listened = (1 - (len(albums)/total))
+            percentage = float("{0:.2f}".format( amount_listened * 100) )
+            output.append(
+                f" **{percentage}%** of albums listened to. {unlistened_output_header(percentage)} "
+                "here are some that you're missing:"
+            )
+            output.append("```")
+            for album in albums:
+                output.append(f"{album.artist} - {album.title}")
+            output.append("```")
+            output = "\r\n".join(output)
+            await interaction.response.send_message(output)
 
 class ReplaceRatingsView(discord.ui.View):
     def __init__(self, old: Rating, new: Rating, *, timeout: float | None = 180):
