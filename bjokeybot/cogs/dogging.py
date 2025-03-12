@@ -38,6 +38,10 @@ class Amalgamation(NamedTuple):
     title: str
     score: int
 
+class AlbumsWithAverages(NamedTuple):
+    title: str
+    artist: str
+    average: float
 
 DB_FILEPATH = "../dogging.sqlite3"
 DAYS_TO_CHANGE_SCORE = 1
@@ -46,18 +50,17 @@ DAYS_TO_CHANGE_SCORE = 1
 def db_conn() -> aiosqlite.Connection:
     return aiosqlite.connect(DB_FILEPATH)
 
-
 def like(s: str) -> str:
     return f"%{s}%"
 
+def averages_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> AlbumsWithAverages:
+    return AlbumsWithAverages(*row)
 
 def album_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Album:
     return Album(*row)
 
-
 def almalgamation_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Amalgamation:
     return Amalgamation(*row)
-
 
 def rating_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Rating:
     return Rating(*row)
@@ -110,11 +113,11 @@ async def fetch_albums_for_user(user_id: int) -> list[Amalgamation]:
         cur = await conn.execute(
             """select id, season, date, choice, artist, title, score from ratings
             inner join Albums ON ratings.album=Albums.id
-            where dogger = ?""",
+            where dogger = ?
+            order by score DESC""",
             (user_id,),
         )
-        return list(await cur.fetchall())
-
+        return list(await cur.fetchall()) # type: ignore
 
 async def fetch_specific_rating(album: Album, user_id: int) -> Rating | None:
     async with db_conn() as conn:
@@ -124,6 +127,15 @@ async def fetch_specific_rating(album: Album, user_id: int) -> Rating | None:
         )
         return await cur.fetchone()  # type: ignore
 
+async def fetch_top_rated_albums() -> list[AlbumsWithAverages]:
+    async with db_conn() as conn:
+        conn.row_factory = averages_factory # type: ignore
+        cur = await conn.execute (
+            """select distinct title, artist, round(avg(score),2) as average from albums
+            inner join ratings on albums.id=ratings.album
+            group by id order by average desc limit 10""", (),
+        )
+        return list(await cur.fetchall()) #type: ignore
 
 async def add_rating(rating: Rating, *, replace_existing: bool = False) -> None:
     async with db_conn() as conn:
@@ -349,6 +361,21 @@ class DoggingCog(BjokeyCog):
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
 
+    @app_commands.command(name="leaderboard", description="shows the top albums sorted by their average")
+    async def leaderboard(self, interaction: Interaction) -> None:
+        albums = await fetch_top_rated_albums()
+        if len(albums) == 0:
+            await interaction.response.send_message(
+                "No albums found, either the database is empty or you haven't rated any."
+            )
+        output = []
+        output.append("The top 10 albums:")
+        output.append("```")
+        for album in albums:
+            output.append(f"{album.title} - {album.artist}: {album.average}")
+        output.append("```")
+        output = "\r\n".join(output)
+        await interaction.response.send_message(output)
 
 class ReplaceRatingsView(discord.ui.View):
     def __init__(self, old: Rating, new: Rating, *, timeout: float | None = 180):
