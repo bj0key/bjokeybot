@@ -113,7 +113,7 @@ async def fetch_unlistened_albums(user_id: int) -> list[Album]:
     async with db_conn() as conn:
         conn.row_factory = album_factory  # type: ignore
         cur = await conn.execute(
-            "select * from Albums where not exists (select * from Ratings where Ratings.album=Albums.id and Ratings.dogger = ?)", (user_id, )
+            "select * from Albums where not exists (select * from Ratings where Ratings.album=Albums.id and Ratings.dogger = ?) AND type = 'Album' ", (user_id, )
         )
         return await cur.fetchall()  # type: ignore
 
@@ -504,13 +504,14 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
             errors.append("Invalid date provided.")
 
         media_type = self.media_type.value
-        try:
-            if media_type != "Album":
-                errors.append(
-                    f"Media type should either be an Album or a Playlist."
-                )
-        except ValueError:
-            errors.append("uhhhhhhhhh")
+
+        # anything about 
+        # Error on album adding: TypeError('sequence item 0: expected str instance, list found') 
+        # is this below
+        if media_type not in ("Album", "Playlist"):
+            errors.append(
+                "Media type should either be an Album or a Playlist."
+            )
 
         # Choice should be a valid server member ID or username
         # this code is horrible btw
