@@ -554,7 +554,10 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
         if len(errors) == 0:
             return Album(-1, media_type, season, timestamp, choice_id, artist, title)
         else:
-            raise ValueError(errors)
+            if len(errors) == 1:
+                raise ValueError(errors[0])
+            else:
+                raise ValueError(errors)
 
     async def on_submit(self, interaction: Interaction) -> None:
         try:
