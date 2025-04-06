@@ -16,6 +16,7 @@ from .base import BjokeyCog
 
 class Album(NamedTuple):
     id: int
+    media_type: str
     season: int
     date: str
     choice: int
@@ -58,7 +59,7 @@ def unlistened_output_header(percentage: float) -> str:
         20.0: "You're getting there...",
         0.0: "Not even a dent..."
     }
-    return [responses[resp] for resp in responses.keys() if percentage > resp][0]
+    return [responses[resp] for resp in responses.keys() if percentage >= resp][0]
 
 def like(s: str) -> str:
     return f"%{s}%"
@@ -81,6 +82,7 @@ async def init_tables() -> None:
         await conn.execute(
             "CREATE TABLE IF NOT EXISTS Albums ("
             "id INTEGER PRIMARY KEY ASC,"
+            "type TEXT NOT NULL,"
             "season INTEGER NOT NULL,"
             "date TEXT NOT NULL,"
             "choice INTEGER,"
@@ -121,6 +123,9 @@ async def count_of_all_albums() -> int:
         cur = await conn.execute(
             "select count(*) from albums"
         )
+        res = await cur.fetchone()
+        if isinstance(res, tuple):
+            return res[0]
         return await cur.fetchone()  # type: ignore
 
 async def fetch_album_from_title(title: str) -> Album | None:
@@ -178,10 +183,11 @@ async def add_album(album: Album) -> None:
     async with db_conn() as conn:
         await conn.execute(
             "INSERT INTO Albums"
-            "(season, date, choice, artist, title)"
-            "VALUES (?, ?, ?, ?, ?);",
+            "(season, type, date, choice, artist, title)"
+            "VALUES (?, ?, ?, ?, ?, ?);",
             (
                 album.season,
+                album.media_type,
                 album.date,
                 album.choice,
                 album.artist,
@@ -409,7 +415,7 @@ class DoggingCog(BjokeyCog):
             await interaction.response.send_message("You've listened to every album :)")
         else:
             output = []
-            total = (await count_of_all_albums())[0]
+            total = await count_of_all_albums()
             amount_listened = (1 - (len(albums)/total))
             percentage = float("{0:.2f}".format( amount_listened * 100) )
             output.append(
@@ -464,8 +470,14 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
     choice = discord.ui.TextInput(
         label="Choice", placeholder="ID/username", required=True
     )
-    artist = discord.ui.TextInput(label="Artist", required=True)
-    album_title = discord.ui.TextInput(label="Title", required=True)
+
+    media_type = discord.ui.TextInput(
+        label="Media Type", placeholder="Either a Playlist or an Album", required=True
+    )
+
+    artist_and_album_title = discord.ui.TextInput(
+        label="Artist and album title", placeholder="formatted like this: artist || album title", required=True
+    )
 
     async def get_and_validate_input(self) -> Album:
         # We're just going through each field, and double-checking that its valid
@@ -490,6 +502,15 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
             timestamp = date.strftime("%Y-%m-%d")
         except ValueError:
             errors.append("Invalid date provided.")
+
+        media_type = self.media_type.value
+        try:
+            if media_type != "Album":
+                errors.append(
+                    f"Media type should either be an Album or a Playlist."
+                )
+        except ValueError:
+            errors.append("uhhhhhhhhh")
 
         # Choice should be a valid server member ID or username
         # this code is horrible btw
@@ -522,16 +543,15 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
                 else:
                     choice_id = member.id
 
-        artist = self.artist.value
+        artist,title = [i.strip() for i in str(self.artist_and_album_title).split("||")]
         if len(artist) == 0:
             errors.append("Artist name is blank")
 
-        title = self.album_title.value
         if len(title) == 0:
             errors.append("Album title is blank")
 
         if len(errors) == 0:
-            return Album(-1, season, timestamp, choice_id, artist, title)
+            return Album(-1, media_type, season, timestamp, choice_id, artist, title)
         else:
             raise ValueError(errors)
 
