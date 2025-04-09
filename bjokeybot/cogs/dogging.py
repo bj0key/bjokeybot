@@ -460,20 +460,22 @@ class DoggingCog(BjokeyCog):
         if len(albums) == 0:
             await interaction.response.send_message("You've listened to every album :)")
         else:
-            output = []
             total = await count_of_all_albums()
             amount_listened = (1 - (len(albums)/total))
             percentage = float("{0:.2f}".format( amount_listened * 100) )
-            output.append(
+            output = (
                 f" **{percentage}%** of albums listened to. {unlistened_output_header(percentage)} "
                 "here are some that you're missing:"
             )
-            output.append("```")
-            for album in albums:
-                output.append(f"{album.artist} - {album.title}")
-            output.append("```")
-            output = "\r\n".join(output)
-            await interaction.response.send_message(output)
+            temp = StringIO()
+            for entry in albums:
+                temp.write(f"{entry.title} - {entry.artist}\n")
+            temp.seek(0)
+            await interaction.response.send_message(
+                output,
+                file=discord.File(fp=temp, filename="albums.txt")
+            )
+
 
 class ReplaceRatingsView(discord.ui.View):
     def __init__(self, old: Rating, new: Rating, *, timeout: float | None = 180):
