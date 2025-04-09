@@ -9,6 +9,7 @@ from discord.ext import commands
 from discord.utils import escape_markdown
 from io import BytesIO
 from json import dumps
+from copy import deepcopy
 
 # from bjokeybot.logger import log
 from .base import BjokeyCog
@@ -16,7 +17,7 @@ from .base import BjokeyCog
 
 class Album(NamedTuple):
     id: int
-    media_type: str
+    type: str
     season: int
     date: str
     choice: int
@@ -263,6 +264,23 @@ class DoggingCog(BjokeyCog):
             output.append(f"\r\n**OVERALL SCORE: {average:.2f}**")
         else:
             output.append("\r\n**OVERALL SCORE: ??**")
+
+
+        ids_to_scores = {str(v.id): k.score for k, v in doggers.items()}
+        without_raven = deepcopy(ids_to_scores)
+        try:
+            without_raven.pop("446705670436421642")
+        except KeyError:
+            output.append("No raven factor, raven hasn't rated this one.")
+            await interaction.response.send_message(
+                "\r\n".join(output),
+                ephemeral=False,
+            )
+            return
+
+        avg = lambda l : sum(list(l.values()))/len(list(l.values()))
+        r_factor = avg(ids_to_scores) - avg(without_raven)
+        output.append(f"Raven factor: {r_factor:.2f}")
 
         await interaction.response.send_message(
             "\r\n".join(output),
