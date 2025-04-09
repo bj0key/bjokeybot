@@ -7,7 +7,7 @@ import discord.utils
 from discord import Interaction, app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown
-from io import BytesIO
+from io import BytesIO, StringIO
 from json import dumps
 from copy import deepcopy
 
@@ -197,6 +197,12 @@ async def add_album(album: Album) -> None:
         )
         await conn.commit()
 
+async def fetch_all_albums() -> list[Album]:
+    async with db_conn() as conn:
+        conn.row_factory = album_factory  # type: ignore
+        cur = await conn.execute("SELECT * FROM Albums", ())
+        return await cur.fetchall()  # type: ignore
+
 
 async def fetch_album_from_id(album_id: int) -> Album | None:
     async with db_conn() as conn:
@@ -250,42 +256,53 @@ class DoggingCog(BjokeyCog):
         chooser = await self.bot.fetch_user(album.choice)
         doggers = {r: await self.bot.fetch_user(r.dogger) for r in ratings}
 
-        output = []
-        output.append(
-            f"**{album.artist} - {album.title}** (Chosen by {escape_markdown(chooser.name)})"
+        embed = discord.Embed(
+            title=f"{album.artist} - {album.title}",
+            color=discord.Color.purple()
         )
-        output.append(f"Listened to on {album.date}")
-        output.append("====")
-        name_padded_len = max(len(user.name) for user in doggers.values()) + 2
-        for rating, user in doggers.items():
-            output.append(f"`{user.name + ':':<{name_padded_len}}{rating.score}`")
-        if len(ratings) > 0:
-            average = sum(r.score for r in ratings) / len(ratings)
-            output.append(f"\r\n**OVERALL SCORE: {average:.2f}**")
-        else:
-            output.append("\r\n**OVERALL SCORE: ??**")
 
+        for rating, user in doggers.items():
+            name_padded_len = max(len(user.name) for user in doggers.values()) + 2
+            embed.add_field(
+                name="",
+                value=(f"`{user.name + ':':<{name_padded_len}}{rating.score}`"),
+                inline=False
+            )
+
+        average = sum(r.score for r in ratings) / len(ratings)
+        embed.add_field(
+            name="Overall Score",
+            value=f"{average:.2f}"
+        )
 
         ids_to_scores = {str(v.id): k.score for k, v in doggers.items()}
         without_raven = deepcopy(ids_to_scores)
         try:
             without_raven.pop("446705670436421642")
         except KeyError:
-            output.append("No raven factor, raven hasn't rated this one.")
+            embed.add_field(
+                name="Raven Factor",
+                value="No rating from raven."
+            )
             await interaction.response.send_message(
-                "\r\n".join(output),
-                ephemeral=False,
+                embed=embed
             )
             return
 
         avg = lambda l : sum(list(l.values()))/len(list(l.values()))
         r_factor = avg(ids_to_scores) - avg(without_raven)
-        output.append(f"Raven factor: {r_factor:.2f}")
 
-        await interaction.response.send_message(
-            "\r\n".join(output),
-            ephemeral=False,
+        embed.add_field(
+            name="Raven Factor",
+            value=f"{r_factor:.2f}"
         )
+
+        embed.set_footer(
+            text=f"Chosen by {escape_markdown(chooser.name)} | Listened to on {album.date}"
+        )
+
+        await interaction.response.send_message(embed=embed)
+
 
     @app_commands.command(name="rate", description="Rate an album!")
     @app_commands.autocomplete(album_title=album_autocomplete)
@@ -424,6 +441,17 @@ class DoggingCog(BjokeyCog):
         output.append("```")
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
+
+    @app_commands.command(name="albums", description="lists all of the albums that are in the database.")
+    async def list_all_albums(self, interaction: Interaction) -> None:
+        albums = await fetch_all_albums()
+        output = StringIO()
+        for entry in albums:
+            output.write(f"{entry.title} - {entry.artist}\n")
+        output.seek(0)
+        await interaction.response.send_message(
+            file=discord.File(fp=output, filename="albums.txt")
+        )
 
     @app_commands.command(name="unlistened", description="shows what albums you haven't listened to")
     async def unlistened(self, interaction: Interaction) -> None:

@@ -1,0 +1,8 @@
+TODO
+
+    [DONE] implement raven factor
+    [DONE] make /summary command an embed
+    * BUG: if /unlistened output is too long, it doesnt send msg.
+        - send output as file if too long.
+    [DONE] crool wants way to see ALL albums
+        - should probably also output as a file for future-proofing.
