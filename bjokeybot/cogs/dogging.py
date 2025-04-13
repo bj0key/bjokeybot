@@ -1,4 +1,8 @@
+from copy import deepcopy
 from datetime import datetime
+from io import BytesIO
+from json import dumps
+from statistics import mean
 from typing import NamedTuple
 
 import aiosqlite
@@ -6,12 +10,7 @@ import discord
 from discord import Interaction, app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown
-from io import BytesIO
-from json import dumps
-from copy import deepcopy
-from statistics import mean
 
-# from bjokeybot.logger import log
 from .base import BjokeyCog
 
 
@@ -40,10 +39,12 @@ class Amalgamation(NamedTuple):
     title: str
     score: int
 
+
 class AlbumsWithAverages(NamedTuple):
     title: str
     artist: str
     average: float
+
 
 DB_FILEPATH = "../dogging.sqlite3"
 DAYS_TO_CHANGE_SCORE = 1
@@ -52,27 +53,35 @@ DAYS_TO_CHANGE_SCORE = 1
 def db_conn() -> aiosqlite.Connection:
     return aiosqlite.connect(DB_FILEPATH)
 
+
 def unlistened_output_header(percentage: float) -> str:
     responses = {
         80.0: "So close now...",
         60.0: "You're over half way!",
         40.0: "You're on the right track...",
         20.0: "You're getting there...",
-        0.0: "Not even a dent..."
+        0.0: "Not even a dent...",
     }
     return [responses[resp] for resp in responses.keys() if percentage >= resp][0]
+
 
 def like(s: str) -> str:
     return f"%{s}%"
 
-def averages_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> AlbumsWithAverages:
+
+def averages_factory(
+    cursor: aiosqlite.Cursor, row: aiosqlite.Row
+) -> AlbumsWithAverages:
     return AlbumsWithAverages(*row)
+
 
 def album_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Album:
     return Album(*row)
 
+
 def almalgamation_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Amalgamation:
     return Amalgamation(*row)
+
 
 def rating_factory(cursor: aiosqlite.Cursor, row: aiosqlite.Row) -> Rating:
     return Rating(*row)
@@ -110,24 +119,26 @@ async def fetch_albums_from_title(title: str) -> list[Album]:
         )
         return list(await cur.fetchall())  # type: ignore
 
+
 async def fetch_unlistened_albums(user_id: int) -> list[Album]:
     async with db_conn() as conn:
         conn.row_factory = album_factory  # type: ignore
         cur = await conn.execute(
-            "select * from Albums where not exists (select * from Ratings where Ratings.album=Albums.id and Ratings.dogger = ?) AND type = 'Album' ", (user_id, )
+            "select * from Albums where not exists (select * from Ratings where Ratings.album=Albums.id and Ratings.dogger = ?) AND type = 'Album' ",
+            (user_id,),
         )
         return await cur.fetchall()  # type: ignore
+
 
 async def count_of_all_albums() -> int:
     async with db_conn() as conn:
         # conn.row_factory = album_factory  # type: ignore
-        cur = await conn.execute(
-            "select count(*) from albums"
-        )
+        cur = await conn.execute("select count(*) from albums")
         res = await cur.fetchone()
         if isinstance(res, tuple):
             return res[0]
         return await cur.fetchone()  # type: ignore
+
 
 async def fetch_album_from_title(title: str) -> Album | None:
     async with db_conn() as conn:
@@ -136,6 +147,7 @@ async def fetch_album_from_title(title: str) -> Album | None:
             "SELECT * FROM Albums WHERE title LIKE ?;", (like(title),)
         )
         return await cur.fetchone()  # type: ignore
+
 
 async def fetch_albums_for_user(user_id: int) -> list[Amalgamation]:
     async with db_conn() as conn:
@@ -147,7 +159,8 @@ async def fetch_albums_for_user(user_id: int) -> list[Amalgamation]:
             order by score DESC""",
             (user_id,),
         )
-        return list(await cur.fetchall()) # type: ignore
+        return list(await cur.fetchall())  # type: ignore
+
 
 async def fetch_specific_rating(album: Album, user_id: int) -> Rating | None:
     async with db_conn() as conn:
@@ -157,15 +170,18 @@ async def fetch_specific_rating(album: Album, user_id: int) -> Rating | None:
         )
         return await cur.fetchone()  # type: ignore
 
+
 async def fetch_top_rated_albums() -> list[AlbumsWithAverages]:
     async with db_conn() as conn:
-        conn.row_factory = averages_factory # type: ignore
-        cur = await conn.execute (
+        conn.row_factory = averages_factory  # type: ignore
+        cur = await conn.execute(
             """select distinct title, artist, round(avg(score),2) as average from albums
             inner join ratings on albums.id=ratings.album
-            group by id order by average desc limit 10""", (),
+            group by id order by average desc limit 10""",
+            (),
         )
-        return list(await cur.fetchall()) #type: ignore
+        return list(await cur.fetchall())  # type: ignore
+
 
 async def add_rating(rating: Rating, *, replace_existing: bool = False) -> None:
     async with db_conn() as conn:
@@ -196,6 +212,7 @@ async def add_album(album: Album) -> None:
             ),
         )
         await conn.commit()
+
 
 async def fetch_all_albums() -> list[Album]:
     async with db_conn() as conn:
@@ -258,7 +275,7 @@ class DoggingCog(BjokeyCog):
 
         embed = discord.Embed(
             title=f"[{album.type}] {album.artist} - {album.title}",
-            color=discord.Color.purple()
+            color=discord.Color.purple(),
         )
 
         for rating, user in doggers.items():
@@ -266,37 +283,27 @@ class DoggingCog(BjokeyCog):
             embed.add_field(
                 name="",
                 value=(f"`{user.name + ':':<{name_padded_len}}{rating.score}`"),
-                inline=False
+                inline=False,
             )
 
         average = sum(r.score for r in ratings) / len(ratings)
-        embed.add_field(
-            name="Overall Score",
-            value=f"{average:.2f}"
-        )
+        embed.add_field(name="Overall Score", value=f"{average:.2f}")
 
         ids_to_scores = {str(v.id): k.score for k, v in doggers.items()}
         without_raven = deepcopy(ids_to_scores)
         try:
             without_raven.pop("446705670436421642")
         except KeyError:
-            embed.add_field(
-                name="Raven Factor",
-                value="No rating from raven."
-            )
+            embed.add_field(name="Raven Factor", value="No rating from raven.")
         else:
             r_factor = mean(ids_to_scores.values()) - mean(without_raven.values())
-            embed.add_field(
-                name="Raven Factor",
-                value=f"{r_factor:.2f}"
-            )
+            embed.add_field(name="Raven Factor", value=f"{r_factor:.2f}")
 
         embed.set_footer(
             text=f"Chosen by {escape_markdown(chooser.name)} | Listened to on {album.date}"
         )
 
         await interaction.response.send_message(embed=embed)
-
 
     @app_commands.command(name="rate", description="Rate an album!")
     @app_commands.autocomplete(album_title=album_autocomplete)
@@ -420,7 +427,9 @@ class DoggingCog(BjokeyCog):
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
 
-    @app_commands.command(name="leaderboard", description="shows the top albums sorted by their average")
+    @app_commands.command(
+        name="leaderboard", description="shows the top albums sorted by their average"
+    )
     async def leaderboard(self, interaction: Interaction) -> None:
         albums = await fetch_top_rated_albums()
         if len(albums) == 0:
@@ -436,7 +445,9 @@ class DoggingCog(BjokeyCog):
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
 
-    @app_commands.command(name="albums", description="lists all of the albums that are in the database.")
+    @app_commands.command(
+        name="albums", description="lists all of the albums that are in the database."
+    )
     async def list_all_albums(self, interaction: Interaction) -> None:
         albums = await fetch_all_albums()
         buf = BytesIO()
@@ -450,16 +461,18 @@ class DoggingCog(BjokeyCog):
             file=discord.File(fp=buf, filename="albums.txt")
         )
 
-    @app_commands.command(name="unlistened", description="shows what albums you haven't listened to")
+    @app_commands.command(
+        name="unlistened", description="shows what albums you haven't listened to"
+    )
     async def unlistened(self, interaction: Interaction) -> None:
-        
+
         albums = await fetch_unlistened_albums(interaction.user.id)
         if len(albums) == 0:
             await interaction.response.send_message("You've listened to every album :)")
         else:
             total = await count_of_all_albums()
-            amount_listened = (1 - (len(albums)/total))
-            percentage = float("{0:.2f}".format( amount_listened * 100) )
+            amount_listened = 1 - (len(albums) / total)
+            percentage = float("{0:.2f}".format(amount_listened * 100))
             output = (
                 f" **{percentage}%** of albums listened to. {unlistened_output_header(percentage)} "
                 "here are some that you're missing:"
@@ -469,11 +482,12 @@ class DoggingCog(BjokeyCog):
                 if entry.type == "Album":
                     buf.write(f"{entry.title} - {entry.artist}\n".encode())
                 else:
-                    buf.write(f"[{entry.type}] {entry.artist} - {entry.title}\n".encode())
+                    buf.write(
+                        f"[{entry.type}] {entry.artist} - {entry.title}\n".encode()
+                    )
             buf.seek(0)
             await interaction.response.send_message(
-                output,
-                file=discord.File(fp=buf, filename="albums.txt")
+                output, file=discord.File(fp=buf, filename="albums.txt")
             )
 
 
@@ -524,7 +538,9 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
     )
 
     artist_and_album_title = discord.ui.TextInput(
-        label="Artist and album title", placeholder="formatted like this: artist || album title", required=True
+        label="Artist and album title",
+        placeholder="formatted like this: artist || album title",
+        required=True,
     )
 
     async def get_and_validate_input(self) -> Album:
@@ -553,13 +569,11 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
 
         media_type = self.media_type.value
 
-        # anything about 
-        # Error on album adding: TypeError('sequence item 0: expected str instance, list found') 
+        # anything about
+        # Error on album adding: TypeError('sequence item 0: expected str instance, list found')
         # is this below
         if media_type not in ("Album", "Playlist"):
-            errors.append(
-                "Media type should either be an Album or a Playlist."
-            )
+            errors.append("Media type should either be an Album or a Playlist.")
 
         # Choice should be a valid server member ID or username
         # this code is horrible btw
@@ -592,7 +606,9 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
                 else:
                     choice_id = member.id
 
-        artist,title = [i.strip() for i in str(self.artist_and_album_title).split("||")]
+        artist, title = [
+            i.strip() for i in str(self.artist_and_album_title).split("||")
+        ]
         if len(artist) == 0:
             errors.append("Artist name is blank")
 
