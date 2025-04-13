@@ -257,7 +257,7 @@ class DoggingCog(BjokeyCog):
         doggers = {r: await self.bot.fetch_user(r.dogger) for r in ratings}
 
         embed = discord.Embed(
-            title=f"{album.artist} - {album.title}",
+            title=f"[{album.type}] {album.artist} - {album.title}",
             color=discord.Color.purple()
         )
 
