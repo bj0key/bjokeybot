@@ -3,13 +3,13 @@ from typing import NamedTuple
 
 import aiosqlite
 import discord
-import discord.utils
 from discord import Interaction, app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown
 from io import BytesIO
 from json import dumps
 from copy import deepcopy
+from statistics import mean
 
 # from bjokeybot.logger import log
 from .base import BjokeyCog
@@ -284,18 +284,12 @@ class DoggingCog(BjokeyCog):
                 name="Raven Factor",
                 value="No rating from raven."
             )
-            await interaction.response.send_message(
-                embed=embed
+        else:
+            r_factor = mean(ids_to_scores.values()) - mean(without_raven.values())
+            embed.add_field(
+                name="Raven Factor",
+                value=f"{r_factor:.2f}"
             )
-            return
-
-        avg = lambda l : sum(list(l.values()))/len(list(l.values()))
-        r_factor = avg(ids_to_scores) - avg(without_raven)
-
-        embed.add_field(
-            name="Raven Factor",
-            value=f"{r_factor:.2f}"
-        )
 
         embed.set_footer(
             text=f"Chosen by {escape_markdown(chooser.name)} | Listened to on {album.date}"
