@@ -7,8 +7,9 @@ import discord.utils
 from discord import Interaction, app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown
-from io import BytesIO
+from io import BytesIO, StringIO
 from json import dumps
+from copy import deepcopy
 
 # from bjokeybot.logger import log
 from .base import BjokeyCog
@@ -16,6 +17,7 @@ from .base import BjokeyCog
 
 class Album(NamedTuple):
     id: int
+    type: str
     season: int
     date: str
     choice: int
@@ -58,7 +60,7 @@ def unlistened_output_header(percentage: float) -> str:
         20.0: "You're getting there...",
         0.0: "Not even a dent..."
     }
-    return [responses[resp] for resp in responses.keys() if percentage > resp][0]
+    return [responses[resp] for resp in responses.keys() if percentage >= resp][0]
 
 def like(s: str) -> str:
     return f"%{s}%"
@@ -81,6 +83,7 @@ async def init_tables() -> None:
         await conn.execute(
             "CREATE TABLE IF NOT EXISTS Albums ("
             "id INTEGER PRIMARY KEY ASC,"
+            "type TEXT NOT NULL,"
             "season INTEGER NOT NULL,"
             "date TEXT NOT NULL,"
             "choice INTEGER,"
@@ -111,7 +114,7 @@ async def fetch_unlistened_albums(user_id: int) -> list[Album]:
     async with db_conn() as conn:
         conn.row_factory = album_factory  # type: ignore
         cur = await conn.execute(
-            "select * from Albums where not exists (select * from Ratings where Ratings.album=Albums.id and Ratings.dogger = ?)", (user_id, )
+            "select * from Albums where not exists (select * from Ratings where Ratings.album=Albums.id and Ratings.dogger = ?) AND type = 'Album' ", (user_id, )
         )
         return await cur.fetchall()  # type: ignore
 
@@ -121,6 +124,9 @@ async def count_of_all_albums() -> int:
         cur = await conn.execute(
             "select count(*) from albums"
         )
+        res = await cur.fetchone()
+        if isinstance(res, tuple):
+            return res[0]
         return await cur.fetchone()  # type: ignore
 
 async def fetch_album_from_title(title: str) -> Album | None:
@@ -178,10 +184,11 @@ async def add_album(album: Album) -> None:
     async with db_conn() as conn:
         await conn.execute(
             "INSERT INTO Albums"
-            "(season, date, choice, artist, title)"
-            "VALUES (?, ?, ?, ?, ?);",
+            "(season, type, date, choice, artist, title)"
+            "VALUES (?, ?, ?, ?, ?, ?);",
             (
                 album.season,
+                album.media_type,
                 album.date,
                 album.choice,
                 album.artist,
@@ -189,6 +196,12 @@ async def add_album(album: Album) -> None:
             ),
         )
         await conn.commit()
+
+async def fetch_all_albums() -> list[Album]:
+    async with db_conn() as conn:
+        conn.row_factory = album_factory  # type: ignore
+        cur = await conn.execute("SELECT * FROM Albums", ())
+        return await cur.fetchall()  # type: ignore
 
 
 async def fetch_album_from_id(album_id: int) -> Album | None:
@@ -243,25 +256,53 @@ class DoggingCog(BjokeyCog):
         chooser = await self.bot.fetch_user(album.choice)
         doggers = {r: await self.bot.fetch_user(r.dogger) for r in ratings}
 
-        output = []
-        output.append(
-            f"**{album.artist} - {album.title}** (Chosen by {escape_markdown(chooser.name)})"
+        embed = discord.Embed(
+            title=f"{album.artist} - {album.title}",
+            color=discord.Color.purple()
         )
-        output.append(f"Listened to on {album.date}")
-        output.append("====")
-        name_padded_len = max(len(user.name) for user in doggers.values()) + 2
-        for rating, user in doggers.items():
-            output.append(f"`{user.name + ':':<{name_padded_len}}{rating.score}`")
-        if len(ratings) > 0:
-            average = sum(r.score for r in ratings) / len(ratings)
-            output.append(f"\r\n**OVERALL SCORE: {average:.2f}**")
-        else:
-            output.append("\r\n**OVERALL SCORE: ??**")
 
-        await interaction.response.send_message(
-            "\r\n".join(output),
-            ephemeral=False,
+        for rating, user in doggers.items():
+            name_padded_len = max(len(user.name) for user in doggers.values()) + 2
+            embed.add_field(
+                name="",
+                value=(f"`{user.name + ':':<{name_padded_len}}{rating.score}`"),
+                inline=False
+            )
+
+        average = sum(r.score for r in ratings) / len(ratings)
+        embed.add_field(
+            name="Overall Score",
+            value=f"{average:.2f}"
         )
+
+        ids_to_scores = {str(v.id): k.score for k, v in doggers.items()}
+        without_raven = deepcopy(ids_to_scores)
+        try:
+            without_raven.pop("446705670436421642")
+        except KeyError:
+            embed.add_field(
+                name="Raven Factor",
+                value="No rating from raven."
+            )
+            await interaction.response.send_message(
+                embed=embed
+            )
+            return
+
+        avg = lambda l : sum(list(l.values()))/len(list(l.values()))
+        r_factor = avg(ids_to_scores) - avg(without_raven)
+
+        embed.add_field(
+            name="Raven Factor",
+            value=f"{r_factor:.2f}"
+        )
+
+        embed.set_footer(
+            text=f"Chosen by {escape_markdown(chooser.name)} | Listened to on {album.date}"
+        )
+
+        await interaction.response.send_message(embed=embed)
+
 
     @app_commands.command(name="rate", description="Rate an album!")
     @app_commands.autocomplete(album_title=album_autocomplete)
@@ -401,6 +442,17 @@ class DoggingCog(BjokeyCog):
         output = "\r\n".join(output)
         await interaction.response.send_message(output)
 
+    @app_commands.command(name="albums", description="lists all of the albums that are in the database.")
+    async def list_all_albums(self, interaction: Interaction) -> None:
+        albums = await fetch_all_albums()
+        output = StringIO()
+        for entry in albums:
+            output.write(f"{entry.title} - {entry.artist}\n")
+        output.seek(0)
+        await interaction.response.send_message(
+            file=discord.File(fp=output, filename="albums.txt")
+        )
+
     @app_commands.command(name="unlistened", description="shows what albums you haven't listened to")
     async def unlistened(self, interaction: Interaction) -> None:
         
@@ -408,20 +460,22 @@ class DoggingCog(BjokeyCog):
         if len(albums) == 0:
             await interaction.response.send_message("You've listened to every album :)")
         else:
-            output = []
-            total = (await count_of_all_albums())[0]
+            total = await count_of_all_albums()
             amount_listened = (1 - (len(albums)/total))
             percentage = float("{0:.2f}".format( amount_listened * 100) )
-            output.append(
+            output = (
                 f" **{percentage}%** of albums listened to. {unlistened_output_header(percentage)} "
                 "here are some that you're missing:"
             )
-            output.append("```")
-            for album in albums:
-                output.append(f"{album.artist} - {album.title}")
-            output.append("```")
-            output = "\r\n".join(output)
-            await interaction.response.send_message(output)
+            temp = StringIO()
+            for entry in albums:
+                temp.write(f"{entry.title} - {entry.artist}\n")
+            temp.seek(0)
+            await interaction.response.send_message(
+                output,
+                file=discord.File(fp=temp, filename="albums.txt")
+            )
+
 
 class ReplaceRatingsView(discord.ui.View):
     def __init__(self, old: Rating, new: Rating, *, timeout: float | None = 180):
@@ -464,8 +518,14 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
     choice = discord.ui.TextInput(
         label="Choice", placeholder="ID/username", required=True
     )
-    artist = discord.ui.TextInput(label="Artist", required=True)
-    album_title = discord.ui.TextInput(label="Title", required=True)
+
+    media_type = discord.ui.TextInput(
+        label="Media Type", placeholder="Either a Playlist or an Album", required=True
+    )
+
+    artist_and_album_title = discord.ui.TextInput(
+        label="Artist and album title", placeholder="formatted like this: artist || album title", required=True
+    )
 
     async def get_and_validate_input(self) -> Album:
         # We're just going through each field, and double-checking that its valid
@@ -490,6 +550,16 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
             timestamp = date.strftime("%Y-%m-%d")
         except ValueError:
             errors.append("Invalid date provided.")
+
+        media_type = self.media_type.value
+
+        # anything about 
+        # Error on album adding: TypeError('sequence item 0: expected str instance, list found') 
+        # is this below
+        if media_type not in ("Album", "Playlist"):
+            errors.append(
+                "Media type should either be an Album or a Playlist."
+            )
 
         # Choice should be a valid server member ID or username
         # this code is horrible btw
@@ -522,18 +592,20 @@ class AddAlbumModal(discord.ui.Modal, title="Add album"):
                 else:
                     choice_id = member.id
 
-        artist = self.artist.value
+        artist,title = [i.strip() for i in str(self.artist_and_album_title).split("||")]
         if len(artist) == 0:
             errors.append("Artist name is blank")
 
-        title = self.album_title.value
         if len(title) == 0:
             errors.append("Album title is blank")
 
         if len(errors) == 0:
-            return Album(-1, season, timestamp, choice_id, artist, title)
+            return Album(-1, media_type, season, timestamp, choice_id, artist, title)
         else:
-            raise ValueError(errors)
+            if len(errors) == 1:
+                raise ValueError(errors[0])
+            else:
+                raise ValueError(errors)
 
     async def on_submit(self, interaction: Interaction) -> None:
         try:
