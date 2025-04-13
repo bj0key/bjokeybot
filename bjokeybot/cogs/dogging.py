@@ -7,7 +7,7 @@ import discord.utils
 from discord import Interaction, app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown
-from io import BytesIO, StringIO
+from io import BytesIO
 from json import dumps
 from copy import deepcopy
 
@@ -445,12 +445,15 @@ class DoggingCog(BjokeyCog):
     @app_commands.command(name="albums", description="lists all of the albums that are in the database.")
     async def list_all_albums(self, interaction: Interaction) -> None:
         albums = await fetch_all_albums()
-        output = StringIO()
+        buf = BytesIO()
         for entry in albums:
-            output.write(f"{entry.title} - {entry.artist}\n")
-        output.seek(0)
+            if entry.type == "Album":
+                buf.write(f"{entry.title} - {entry.artist}\n".encode())
+            else:
+                buf.write(f"[{entry.type}] {entry.artist} - {entry.title}\n".encode())
+        buf.seek(0)
         await interaction.response.send_message(
-            file=discord.File(fp=output, filename="albums.txt")
+            file=discord.File(fp=buf, filename="albums.txt")
         )
 
     @app_commands.command(name="unlistened", description="shows what albums you haven't listened to")
@@ -467,13 +470,16 @@ class DoggingCog(BjokeyCog):
                 f" **{percentage}%** of albums listened to. {unlistened_output_header(percentage)} "
                 "here are some that you're missing:"
             )
-            temp = StringIO()
+            buf = BytesIO()
             for entry in albums:
-                temp.write(f"{entry.title} - {entry.artist}\n")
-            temp.seek(0)
+                if entry.type == "Album":
+                    buf.write(f"{entry.title} - {entry.artist}\n".encode())
+                else:
+                    buf.write(f"[{entry.type}] {entry.artist} - {entry.title}\n".encode())
+            buf.seek(0)
             await interaction.response.send_message(
                 output,
-                file=discord.File(fp=temp, filename="albums.txt")
+                file=discord.File(fp=buf, filename="albums.txt")
             )
 
 
