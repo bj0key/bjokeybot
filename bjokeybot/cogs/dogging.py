@@ -188,7 +188,7 @@ async def add_album(album: Album) -> None:
             "VALUES (?, ?, ?, ?, ?, ?);",
             (
                 album.season,
-                album.media_type,
+                album.type,
                 album.date,
                 album.choice,
                 album.artist,
